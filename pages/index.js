@@ -30,7 +30,7 @@ export async function getServerSideProps(context) {
 export default function Home({ messages }) {
   const [isAsc, setIsAsc] = useState(true);
   const [locale, setLocale] = useState("en");
-  const [messagesSnapshot, loading, error] = useCollection(
+  const [messagesSnapshot] = useCollection(
     db.collection("messages").orderBy("timestamp", isAsc ? "asc" : "desc")
   );
   const inputRef = useRef(null);
