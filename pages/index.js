@@ -5,13 +5,37 @@ import { db } from "../firebase";
 import firebase from "firebase";
 import { useRef, useState } from "react";
 
-export default function Home() {
+export async function getServerSideProps(context) {
+  const messages = await db
+    .collection("messages")
+    .orderBy("timestamp", "asc")
+    .get();
+
+  const data = {
+    docs: messages.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })),
+  };
+
+  console.log(data);
+
+  return {
+    props: {
+      messages: JSON.stringify(data),
+    },
+  };
+}
+
+export default function Home({ messages }) {
   const [isAsc, setIsAsc] = useState(true);
   const [locale, setLocale] = useState("en");
   const [messagesSnapshot, loading, error] = useCollection(
     db.collection("messages").orderBy("timestamp", isAsc ? "asc" : "desc")
   );
   const inputRef = useRef(null);
+
+  console.log(JSON.parse(messages));
 
   const onSubmit = (e) => {
     e.preventDefault();
@@ -33,11 +57,17 @@ export default function Home() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <h1>Lets Build Translation APP</h1>
-      {messagesSnapshot?.docs.map((doc) => (
-        <div key={doc.id}>
-          <p>{doc.data().translated?.[locale]}</p>
-        </div>
-      ))}
+      {messagesSnapshot
+        ? messagesSnapshot?.docs.map((doc) => (
+            <div key={doc.id}>
+              <p>{doc.data().translated?.[locale]}</p>
+            </div>
+          ))
+        : JSON.parse(messages).docs.map((doc) => (
+            <div key={doc.id}>
+              <p>{doc.translated?.[locale]}</p>
+            </div>
+          ))}
       <button onClick={() => setIsAsc(!isAsc)}>Flip Order</button>
 
       <select value={locale} onChange={handleChange}>
