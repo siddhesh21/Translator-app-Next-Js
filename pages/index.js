@@ -1,65 +1,61 @@
-import Head from 'next/head'
-import styles from '../styles/Home.module.css'
+import Head from "next/head";
+import styles from "../styles/Home.module.css";
+import { useCollection } from "react-firebase-hooks/firestore";
+import { db } from "../firebase";
+import firebase from "firebase";
+import { useRef, useState } from "react";
 
 export default function Home() {
+  const [isAsc, setIsAsc] = useState(true);
+  const [locale, setLocale] = useState("en");
+  const [messagesSnapshot, loading, error] = useCollection(
+    db.collection("messages").orderBy("timestamp", isAsc ? "asc" : "desc")
+  );
+  const inputRef = useRef(null);
+
+  const onSubmit = (e) => {
+    e.preventDefault();
+    db.collection("messages").add({
+      message: inputRef.current.value,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    inputRef.current.value = "";
+  };
+
+  const handleChange = (e) => {
+    setLocale(e.target.value);
+  };
   return (
     <div className={styles.container}>
       <Head>
-        <title>Create Next App</title>
+        <title>Translation App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="https://nextjs.org">Next.js!</a>
-        </h1>
-
-        <p className={styles.description}>
-          Get started by editing{' '}
-          <code className={styles.code}>pages/index.js</code>
-        </p>
-
-        <div className={styles.grid}>
-          <a href="https://nextjs.org/docs" className={styles.card}>
-            <h3>Documentation &rarr;</h3>
-            <p>Find in-depth information about Next.js features and API.</p>
-          </a>
-
-          <a href="https://nextjs.org/learn" className={styles.card}>
-            <h3>Learn &rarr;</h3>
-            <p>Learn about Next.js in an interactive course with quizzes!</p>
-          </a>
-
-          <a
-            href="https://github.com/vercel/next.js/tree/master/examples"
-            className={styles.card}
-          >
-            <h3>Examples &rarr;</h3>
-            <p>Discover and deploy boilerplate example Next.js projects.</p>
-          </a>
-
-          <a
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-            className={styles.card}
-          >
-            <h3>Deploy &rarr;</h3>
-            <p>
-              Instantly deploy your Next.js site to a public URL with Vercel.
-            </p>
-          </a>
+      <h1>Lets Build Translation APP</h1>
+      {messagesSnapshot?.docs.map((doc) => (
+        <div key={doc.id}>
+          <p>{doc.data().translated?.[locale]}</p>
         </div>
-      </main>
+      ))}
+      <button onClick={() => setIsAsc(!isAsc)}>Flip Order</button>
 
-      <footer className={styles.footer}>
-        <a
-          href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Powered by{' '}
-          <img src="/vercel.svg" alt="Vercel Logo" className={styles.logo} />
-        </a>
-      </footer>
+      <select value={locale} onChange={handleChange}>
+        <option value="en">English</option>
+        <option value="mr">Marathi</option>
+        <option value="es">Spanish</option>
+        <option value="de">Germany</option>
+        <option value="fr">French</option>
+        <option value="ru">Russian</option>
+        <option value="zh">Chinese</option>
+      </select>
+
+      <form>
+        <input ref={inputRef} type="text" />
+        <button onClick={onSubmit} type="submit">
+          Send Message
+        </button>
+      </form>
     </div>
-  )
+  );
 }
